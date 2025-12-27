@@ -1,10 +1,12 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import FileResponse, Http404
 import os
+
+# Make sure these imports match your actual file structure
 from .forms import RegisterForm
 from .models import Receipt, BusinessProfile, ReceiptItem
 from .parser import MpesaParser
@@ -15,17 +17,21 @@ def landing_page(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     return render(request, 'landing.html')
+
 # --- AUTH ---
 def register_view(request):
     if request.method == "POST":
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
+            # Create the profile immediately
             BusinessProfile.objects.create(user=user, business_name=f"{user.username}'s Shop")
             login(request, user)
             messages.success(request, "Account created successfully!")
             return redirect('dashboard')
-    else: form = UserCreationForm()
+    else:
+        # FIX: Use the SAME form for loading the page
+        form = RegisterForm()
     return render(request, 'auth/register.html', {'form': form})
 
 def login_view(request):
@@ -34,7 +40,8 @@ def login_view(request):
         if form.is_valid():
             login(request, form.get_user())
             return redirect('dashboard')
-    else: form = AuthenticationForm()
+    else:
+        form = AuthenticationForm()
     return render(request, 'auth/login.html', {'form': form})
 
 def logout_view(request):
@@ -44,7 +51,7 @@ def logout_view(request):
 # --- APP ---
 @login_required(login_url='login')
 def dashboard(request):
-    # Ensure Profile Exists
+    # Ensure Profile Exists (Safety net)
     profile, _ = BusinessProfile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
@@ -92,28 +99,17 @@ def dashboard(request):
     receipts = Receipt.objects.filter(business=profile).order_by('-created_at')[:20]
     return render(request, 'dashboard.html', {'receipts': receipts, 'profile': profile})
 
-
-@login_required(login_url='login')
-def update_settings(request):
-    if request.method == "POST":
-        p = request.user.business_profile
-        p.business_name = request.POST.get('business_name')
-        p.phone_number = request.POST.get('business_phone')
-        p.kra_pin = request.POST.get('kra_pin')
-        p.charges_vat = request.POST.get('charges_vat') == 'on'
-        p.save()
-        messages.success(request, "Settings saved.")
-    return redirect('dashboard')
-
 @login_required(login_url='login')
 def download_pdf(request, receipt_id):
     try:
         receipt = Receipt.objects.get(id=receipt_id, business=request.user.business_profile)
+        # Verify path matches where Huey saves them
         path = f"generated_pdfs/{receipt.mpesa_code}.pdf"
         if os.path.exists(path):
             return FileResponse(open(path, 'rb'), as_attachment=True, filename=f"{receipt.mpesa_code}.pdf")
         raise Http404
-    except Receipt.DoesNotExist: raise Http404
+    except Receipt.DoesNotExist:
+        raise Http404
 
 @login_required(login_url='login')
 def clear_dashboard(request):
@@ -122,6 +118,7 @@ def clear_dashboard(request):
         messages.success(request, "All data wiped.")
     return redirect('dashboard')
 
+# --- SETTINGS (Cleaned up: Only ONE function now) ---
 @login_required(login_url='login')
 def update_settings(request):
     if request.method == "POST":
@@ -131,11 +128,10 @@ def update_settings(request):
         p.kra_pin = request.POST.get('kra_pin')
         p.charges_vat = request.POST.get('charges_vat') == 'on'
         
-        # NEW: Handle Logo Upload
+        # Handle Logo Upload
         if 'business_logo' in request.FILES:
             p.logo = request.FILES['business_logo']
             
         p.save()
         messages.success(request, "Settings saved.")
     return redirect('dashboard')
-
