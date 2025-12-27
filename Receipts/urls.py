@@ -9,7 +9,7 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
 
     # Protected App
-    path('dashboard/', views.dashboard, name='dashboard'), # <--- Moved here
+    path('dashboard/', views.dashboard, name='dashboard'),
     path('settings/', views.update_settings, name='update_settings'),
     path('download/<int:receipt_id>/', views.download_pdf, name='download_pdf'),
     path('clear/', views.clear_dashboard, name='clear_dashboard'),
