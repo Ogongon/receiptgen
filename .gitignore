@@ -6,4 +6,4 @@ db.sqlite3
 .env
 huey_data/
 media/
-huey.*
+huey.*core/settings.py
