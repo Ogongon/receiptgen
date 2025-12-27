@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - ReceiptGen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Scrollbar for the modal */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Force Django Forms to look like Tailwind */
+        .django-form p { margin-bottom: 1rem; }
+        .django-form label { display: block; font-size: 0.875rem; font-weight: 500; color: #334155; margin-bottom: 0.25rem; }
+        .django-form input[type="text"], 
+        .django-form input[type="email"], 
+        .django-form input[type="password"] { 
+            width: 100%; 
+            padding: 0.75rem 1rem; 
+            background-color: #fff; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 0.5rem; 
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        .django-form input:focus { 
+            outline: none; 
+            border-color: #10b981; 
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1); 
+        }
+        
+        /* Style the Checkbox specifically */
+        .django-form input[type="checkbox"] {
+            width: 1rem;
+            height: 1rem;
+            margin-right: 0.5rem;
+            accent-color: #10b981;
+            cursor: pointer;
+        }
+        
+        /* Fix the "Agree" label layout */
+        .django-form label[for="id_agree_terms"] {
+            display: inline-block;
+            font-size: 0.8rem;
+            color: #475569;
+            cursor: pointer;
+        }
+
+        .django-form .helptext { 
+            display: block; 
+            font-size: 0.75rem; 
+            color: #94a3b8; 
+            margin-top: 0.25rem; 
+        }
+        .django-form ul { display: none; } 
+    </style>
+</head>
+<body class="font-['Inter'] bg-slate-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden max-w-4xl w-full flex border border-slate-100">
+        
+        <div class="hidden md:flex w-5/12 bg-emerald-900 relative flex-col justify-between p-10 text-white">
+            <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+            <div class="relative z-10">
+                <div class="font-bold text-xl tracking-tight mb-8">ReceiptGen</div>
+                <h2 class="text-3xl font-bold leading-tight mb-4">Start generating receipts in seconds.</h2>
+                <ul class="space-y-3 text-emerald-100/80 text-sm">
+                    <li class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Legal Compliance Ready
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Multi-user Accounts
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Auto-Data Deletion
+                    </li>
+                </ul>
+            </div>
+            <div class="relative z-10 text-xs text-emerald-100/50">
+                &copy; 2025 ReceiptGen Kenya.
+            </div>
+        </div>
+
+        <div class="w-full md:w-7/12 p-8 sm:p-12">
+            <div class="text-center md:text-left mb-8">
+                <h1 class="text-2xl font-bold text-slate-900">Create your account</h1>
+                <p class="text-slate-500 text-sm mt-1">No credit card required. Cancel anytime.</p>
+            </div>
+
+            <form method="POST" class="django-form">
+                {% csrf_token %}
+                {{ form.as_p }}
+                
+                <div class="mt-6">
+                    <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-200">
+                        Create Account
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-4 text-xs text-center text-slate-500">
+                <p>
+                    By clicking "Create Account", you agree to the 
+                    <button type="button" onclick="openModal('legal-modal')" class="underline text-emerald-600 hover:text-emerald-700 font-medium">
+                        Terms of Service & Data Processing Agreement
+                    </button>.
+                </p>
+            </div>
+
+            <p class="mt-6 text-center text-sm text-slate-600">
+                Already have an account? 
+                <a href="{% url 'login' %}" class="font-bold text-slate-900 hover:underline">Log in</a>
+            </p>
+        </div>
+
+    </div>
+
+    <div id="legal-modal" class="relative z-[100] hidden" role="dialog" aria-modal="true">
+        <div id="legal-modal-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity opacity-0 duration-300"></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div id="legal-modal-panel" class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all duration-300 opacity-0 translate-y-4 w-full max-w-lg p-6">
+                    
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="p-2 bg-amber-100 rounded-full text-amber-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900">Terms & Data Agreement</h3>
+                    </div>
+
+                    <div class="text-sm text-slate-600 space-y-3 mb-6 h-64 overflow-y-auto pr-2 custom-scrollbar">
+                        <h4 class="font-bold text-slate-900 mt-2">1. Your Role as Data Controller</h4>
+                        <p>By using ReceiptGen, you (the Merchant) acknowledge that you are the <strong>"Data Controller"</strong> under the Kenya Data Protection Act. You are responsible for obtaining consent from your customers before entering their phone numbers into this system.</p>
+
+                        <h4 class="font-bold text-slate-900 mt-2">2. Our Role as Data Processor</h4>
+                        <p>ReceiptGen acts solely as a <strong>"Data Processor"</strong>. We store and process data only on your instructions to generate receipts. We do not own, sell, or use your customer data for our own purposes.</p>
+
+                        <h4 class="font-bold text-slate-900 mt-2">3. Not a Substitute for eTIMS</h4>
+                        <p>This tool generates internal bookkeeping records only. It does not generate valid KRA Fiscal Invoices. You are required by law to issue eTIMS-compliant invoices for VAT-registered supplies.</p>
+                        
+                        <h4 class="font-bold text-slate-900 mt-2">4. Data Erasure Policy</h4>
+                        <p>To minimize liability for both parties, this system automatically deletes customer transaction data every 24 hours. You are responsible for downloading and saving any records you need before this period expires.</p>
+                    </div>
+
+                    <button onclick="closeModal('legal-modal')" class="w-full py-2.5 font-bold text-white bg-slate-900 hover:bg-emerald-600 rounded-xl transition-colors">
+                        I Understand & Agree
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal(id) {
+            const m = document.getElementById(id);
+            m.classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById(id + '-backdrop').classList.remove('opacity-0');
+                document.getElementById(id + '-panel').classList.remove('opacity-0', 'translate-y-4');
+            }, 10);
+        }
+
+        function closeModal(id) {
+            document.getElementById(id + '-backdrop').classList.add('opacity-0');
+            document.getElementById(id + '-panel').classList.add('opacity-0', 'translate-y-4');
+            setTimeout(() => {
+                document.getElementById(id).classList.add('hidden');
+            }, 300);
+        }
+    </script>
+
+</body>
+</html>

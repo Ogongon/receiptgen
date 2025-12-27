@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - ReceiptGen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        shake: {
+                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .valid-ring { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); border-color: #10b981; }
+        .invalid-ring { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2); border-color: #ef4444; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen relative overflow-x-hidden selection:bg-emerald-100 selection:text-emerald-900 font-sans">
+
+    <div class="fixed top-5 right-5 z-50 flex flex-col gap-3 w-full max-w-sm pointer-events-none">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="pointer-events-auto transform transition-all duration-300 translate-y-0 opacity-100 flex items-center p-4 mb-4 rounded-xl shadow-2xl animate-fade-in-up bg-white border-l-4 
+                {% if message.tags == 'error' %} border-red-500 text-red-700
+                {% elif message.tags == 'warning' %} border-amber-500 text-amber-700
+                {% else %} border-emerald-500 text-emerald-700 {% endif %}">
+                <div class="text-sm font-medium">{{ message }}</div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-100 rounded-full blur-3xl opacity-50 animate-pulse-slow"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-100 rounded-full blur-3xl opacity-50 animate-pulse-slow" style="animation-delay: 1.5s;"></div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4 py-8">
+        
+        <div class="flex justify-between items-center mb-8 animate-fade-in-up">
+            <div class="flex items-center gap-2">
+                <a href="{% url 'logout' %}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-500 hover:text-red-500 hover:border-red-200 transition-all shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3 h-3">
+                        <path fill-rule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M19 10a.75.75 0 00-.75-.75H8.704l1.048-.943a.75.75 0 10-1.004-1.114l-2.5 2.25a.75.75 0 000 1.114l2.5 2.25a.75.75 0 101.004-1.114l-1.048-.943h9.546A.75.75 0 0019 10z" clip-rule="evenodd" />
+                    </svg>
+                    LOGOUT
+                </a>
+            </div>
+            
+            <button onclick="openModal('settings-modal')" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:text-emerald-600 hover:border-emerald-200 transition-all shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                SETTINGS
+            </button>
+        </div>
+
+        <div class="text-center mb-10 animate-fade-in-up">
+            <h1 class="text-3xl font-bold tracking-tight text-slate-900">ReceiptGen Dashboard</h1>
+            <div class="mt-2 flex items-center justify-center gap-2">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <p id="live-clock" class="text-xs font-mono text-slate-500">Connecting to server...</p>
+            </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl shadow-xl shadow-slate-200/50 p-6 mb-8 animate-fade-in-up delay-75">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <span class="flex items-center justify-center w-6 h-6 rounded bg-emerald-100 text-emerald-600 text-xs">1</span>
+                    Paste M-Pesa Message
+                </h2>
+                <span id="validation-badge" class="hidden px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500 transition-colors">
+                    Waiting for input...
+                </span>
+            </div>
+            
+            <form method="POST" id="receipt-form">
+                {% csrf_token %}
+                
+                <div class="relative mb-4">
+                    <textarea 
+                        name="sms_text" 
+                        id="sms-input"
+                        class="w-full h-32 p-4 bg-white border border-slate-200 rounded-xl font-mono text-sm focus:outline-none transition-all shadow-sm placeholder:text-slate-300"
+                        placeholder="Paste message here e.g. 'TLO7F1X3PZ Confirmed. Ksh1,500.00 sent to...'"
+                    ></textarea>
+                    
+                    <div id="format-warning" class="hidden absolute bottom-3 left-3 right-3 bg-red-50 border border-red-100 rounded-lg p-2 flex items-start gap-2 animate-fade-in-up">
+                        <svg class="w-4 h-4 text-red-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        <div class="flex-1">
+                            <p class="text-xs font-bold text-red-800">Invalid Format Detected</p>
+                            <p class="text-[10px] text-red-600">Message must contain "Confirmed" and "Ksh". Please copy the full SMS.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                            <span class="flex items-center justify-center w-5 h-5 rounded bg-blue-100 text-blue-600 text-[10px]">2</span>
+                            Add Items (Optional)
+                        </h2>
+                        <button type="button" onclick="addItemRow()" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 px-2 py-1 rounded transition-colors">
+                            + Add Another Item
+                        </button>
+                    </div>
+
+                    <div id="items-container" class="space-y-2">
+                        <div class="flex gap-2 item-row">
+                            <input type="text" name="item_desc[]" placeholder="Item Name (e.g. Consultation)" 
+                                   class="flex-[2] p-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all">
+                            <input type="number" name="item_cost[]" placeholder="Price" step="0.01"
+                                   class="flex-1 p-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit" id="submit-btn" class="group relative inline-flex items-center justify-center px-8 py-3 text-sm font-bold text-white transition-all duration-200 bg-slate-900 rounded-xl hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span>Generate Receipt</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="glass-panel rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden animate-fade-in-up delay-100">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white/50">
+                <h2 class="text-lg font-bold text-slate-800">Recent Transactions</h2>
+                
+                {% if receipts %}
+                <button onclick="openModal('delete-modal')" class="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 px-3 py-1.5 rounded-lg transition-colors">
+                    Clear History
+                </button>
+                {% endif %}
+            </div>
+
+            <div class="overflow-x-auto">
+                {% if not receipts %}
+                    <div class="py-16 text-center">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 mb-4">
+                            <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-sm font-bold text-slate-900">No receipts yet</h3>
+                        <p class="text-xs text-slate-500 mt-1">Paste an SMS above to generate your first one.</p>
+                    </div>
+                {% else %}
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/50 border-b border-slate-100 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                                <th class="px-6 py-4">Status</th>
+                                <th class="px-6 py-4">Ref Code</th>
+                                <th class="px-6 py-4">Customer</th>
+                                <th class="px-6 py-4">Amount</th>
+                                <th class="px-6 py-4 text-right">Download</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 bg-white">
+                            {% for receipt in receipts %}
+                            <tr class="group hover:bg-slate-50/80 transition-colors duration-200">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if receipt.status == 'GENERATED' %}
+                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            READY
+                                        </div>
+                                    {% else %}
+                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-100 animate-pulse">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                            PROCESSING
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 font-mono text-xs text-slate-600 font-bold">
+                                    {{ receipt.mpesa_code }}
+                                </td>
+                                <td class="px-6 py-4 text-sm font-medium text-slate-700">
+                                    {{ receipt.customer_name }}
+                                </td>
+                                <td class="px-6 py-4 text-sm font-bold text-slate-900">
+                                    Ksh {{ receipt.amount|floatformat:2 }}
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    {% if receipt.status == 'GENERATED' %}
+                                        <a href="{% url 'download_pdf' receipt.id %}" class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-100">
+                                            PDF
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3 h-3 ml-1">
+                                                <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
+                                            </svg>
+                                        </a>
+                                    {% else %}
+                                        <span class="text-xs text-slate-400">Wait...</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+
+        <footer class="text-center text-xs text-slate-400 mt-12 mb-4">
+            <button onclick="openModal('legal-modal')" class="hover:text-emerald-600 underline transition-colors">Legal Disclaimer</button>
+        </footer>
+    </div>
+
+    <script>
+        // 1. LIVE CLOCK
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').textContent = now.toLocaleString('en-KE', { 
+                weekday: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' 
+            });
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        // 2. AUTO-REFRESH for Pending Items
+        const checkInterval = 4000;
+        function smartRefresh() {
+            if (document.querySelectorAll('.animate-pulse').length > 0) {
+                const input = document.getElementById('sms-input');
+                if (document.activeElement !== input && input.value.length === 0) {
+                    location.reload();
+                } else {
+                    setTimeout(smartRefresh, checkInterval);
+                }
+            }
+        }
+        setTimeout(smartRefresh, checkInterval);
+
+        // 3. REAL-TIME VALIDATION
+        const smsInput = document.getElementById('sms-input');
+        const badge = document.getElementById('validation-badge');
+        const warning = document.getElementById('format-warning');
+        const submitBtn = document.getElementById('submit-btn');
+
+        smsInput.addEventListener('input', function() {
+            const val = this.value;
+            
+            if (val.length === 0) {
+                // Reset State
+                this.classList.remove('valid-ring', 'invalid-ring');
+                badge.classList.add('hidden');
+                warning.classList.add('hidden');
+                submitBtn.disabled = false;
+                return;
+            }
+
+            // Simple Heuristics: Must have "Confirmed" and "Ksh"
+            const hasConfirmed = /confirmed/i.test(val);
+            const hasKsh = /ksh/i.test(val);
+            const isValid = hasConfirmed && hasKsh;
+
+            if (isValid) {
+                this.classList.add('valid-ring');
+                this.classList.remove('invalid-ring');
+                badge.textContent = "Valid Format";
+                badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 transition-colors";
+                badge.classList.remove('hidden');
+                warning.classList.add('hidden');
+                submitBtn.disabled = false;
+            } else {
+                this.classList.add('invalid-ring');
+                this.classList.remove('valid-ring');
+                badge.textContent = "Invalid Format";
+                badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 transition-colors";
+                badge.classList.remove('hidden');
+                warning.classList.remove('hidden');
+                // We don't disable the button entirely, just warn, in case regex is too strict
+            }
+        });
+
+        // 4. ADD ITEMS DYNAMICALLY
+        function addItemRow() {
+            const container = document.getElementById('items-container');
+            const div = document.createElement('div');
+            div.className = 'flex gap-2 item-row animate-fade-in-up';
+            div.innerHTML = `
+                <input type="text" name="item_desc[]" placeholder="Item Name" 
+                       class="flex-[2] p-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all">
+                <input type="number" name="item_cost[]" placeholder="Price" step="0.01"
+                       class="flex-1 p-2.5 text-sm bg-white border border-slate-200 rounded-lg focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all">
+                <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-red-500 px-2">
+                    &times;
+                </button>
+            `;
+            container.appendChild(div);
+        }
+
+        // 5. MODAL LOGIC
+        function openModal(id) {
+            const m = document.getElementById(id);
+            m.classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById(id + '-backdrop').classList.remove('opacity-0');
+                document.getElementById(id + '-panel').classList.remove('opacity-0', 'translate-y-4');
+            }, 10);
+        }
+        function closeModal(id) {
+            document.getElementById(id + '-backdrop').classList.add('opacity-0');
+            document.getElementById(id + '-panel').classList.add('opacity-0', 'translate-y-4');
+            setTimeout(() => document.getElementById(id).classList.add('hidden'), 300);
+        }
+    </script>
+
+    <div id="settings-modal" class="relative z-[100] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div id="settings-modal-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity opacity-0 duration-300"></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div id="settings-modal-panel" class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all duration-300 opacity-0 translate-y-4 w-full max-w-lg border border-slate-100">
+                    <form action="{% url 'update_settings' %}" method="POST" enctype="multipart/form-data"> {% csrf_token %}
+    <div class="p-6">
+        <h3 class="text-lg font-bold text-slate-900 mb-6">Business Settings</h3>
+        <div class="space-y-4">
+            
+            <div class="flex items-center gap-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                <div class="w-12 h-12 rounded-lg bg-white border border-slate-200 flex items-center justify-center overflow-hidden">
+                    {% if profile.logo %}
+                        <img src="{{ profile.logo.url }}" class="w-full h-full object-cover">
+                    {% else %}
+                        <svg class="w-6 h-6 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    {% endif %}
+                </div>
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Business Logo</label>
+                    <input type="file" name="business_logo" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Business Name</label>
+                <input type="text" name="business_name" value="{{ profile.business_name }}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Phone</label>
+                <input type="text" name="business_phone" value="{{ profile.phone_number }}" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all">
+            </div>
+            
+            <div class="pt-4 border-t border-slate-100">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">KRA PIN (Optional)</label>
+                <input type="text" name="kra_pin" value="{{ profile.kra_pin|default:'' }}" placeholder="P051XXXXXXZ" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all">
+            </div>
+            <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <input type="checkbox" name="charges_vat" id="vat_toggle" {% if profile.charges_vat %}checked{% endif %} class="h-4 w-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500">
+                <label for="vat_toggle" class="text-sm font-medium text-slate-700">Show 16% VAT Breakdown</label>
+            </div>
+        </div>
+    </div>
+    <div class="bg-slate-50 px-6 py-4 flex justify-end gap-3 border-t border-slate-100">
+        <button type="button" onclick="closeModal('settings-modal')" class="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors">Cancel</button>
+        <button type="submit" class="px-4 py-2 bg-slate-900 text-white text-sm font-bold rounded-lg hover:bg-emerald-600 transition-colors shadow-lg shadow-slate-900/10">Save Changes</button>
+    </div>
+</form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-modal" class="relative z-[100] hidden" role="dialog" aria-modal="true">
+        <div id="delete-modal-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity opacity-0 duration-300"></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div id="delete-modal-panel" class="relative transform overflow-hidden rounded-2xl bg-white text-center shadow-2xl transition-all duration-300 opacity-0 translate-y-4 w-full max-w-sm p-6">
+                    <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900">Delete all data?</h3>
+                    <p class="text-sm text-slate-500 mt-2 mb-6">This will permanently erase all your transaction history and personal data. This cannot be undone.</p>
+                    <div class="flex gap-3">
+                        <button onclick="closeModal('delete-modal')" class="flex-1 py-2.5 font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Cancel</button>
+                        <form action="{% url 'clear_dashboard' %}" method="POST" class="flex-1">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full py-2.5 font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-lg shadow-red-500/20">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="legal-modal" class="relative z-[100] hidden" role="dialog" aria-modal="true">
+        <div id="legal-modal-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity opacity-0 duration-300"></div>
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+               <div class="text-sm text-slate-600 space-y-3 mb-6 h-64 overflow-y-auto pr-2 custom-scrollbar">
+    
+    <h4 class="font-bold text-slate-900 mt-2">1. Your Role as Data Controller</h4>
+    <p>By using ReceiptGen, you (the Merchant) acknowledge that you are the <strong>"Data Controller"</strong> under the Kenya Data Protection Act. You are responsible for obtaining consent from your customers before entering their phone numbers into this system.</p>
+
+    <h4 class="font-bold text-slate-900 mt-2">2. Our Role as Data Processor</h4>
+    <p>ReceiptGen acts solely as a <strong>"Data Processor"</strong>. We store and process data only on your instructions to generate receipts. We do not own, sell, or use your customer data for our own purposes.</p>
+
+    <h4 class="font-bold text-slate-900 mt-2">3. Not a Substitute for eTIMS</h4>
+    <p>This tool generates internal bookkeeping records only. It does not generate valid KRA Fiscal Invoices. You are required by law to issue eTIMS-compliant invoices for VAT-registered supplies.</p>
+    
+    <h4 class="font-bold text-slate-900 mt-2">4. Data Erasure Policy</h4>
+    <p>To minimize liability for both parties, this system automatically deletes customer transaction data every 24 hours. You are responsible for downloading and saving any records you need before this period expires.</p>
+
+</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize alerting for toasts
+        setTimeout(() => {
+            document.querySelectorAll('.pointer-events-auto').forEach(el => {
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 300);
+            });
+        }, 4000);
+    </script>
+</body>
+</html>
